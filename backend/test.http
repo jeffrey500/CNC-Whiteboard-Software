@@ -1,0 +1,13 @@
+### GET request to example server
+POST http://localhost:5050/images
+
+###
+
+POST http://localhost:5050/images
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="IMG_1736.jpg"
+
+< ./test.jpg
+--WebAppBoundary--
