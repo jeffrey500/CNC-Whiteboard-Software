@@ -11,9 +11,9 @@ app = FastAPI()
 
 # client -> post -> image -> stored
 
-@app.post("/images/", status_code=201)
+@app.post("/data/images/", status_code=201)
 async def create_image(
-    file: Annotated[UploadFile, File()]
+        file: Annotated[UploadFile, File()]
 ):
     filename = file.filename
     content_type = file.content_type

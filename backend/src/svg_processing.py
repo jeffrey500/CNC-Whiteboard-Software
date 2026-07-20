@@ -1,82 +1,86 @@
-from svgpathtools import svg2paths, CubicBezier, QuadraticBezier, Arc
-import numpy as np
 import math
+from os import mkdir
+from pathlib import Path
 
-# return the optimal order of paths
-def greedy(paths):
+from svgpathtools import svg2paths, CubicBezier, QuadraticBezier, Arc, Line
+from path_functions import greedy, get_transformed_point, transform_path
+import numpy as np
 
-    def distance(coord1, coord2):
-        return math.sqrt(math.pow(coord1[0] - coord2[0], 2) + math.pow(coord1[1] - coord2[1], 2))
+IDENTITY_MATRIX = np.array([[1,0,0], [0,1,0], [0,0,1]])
 
-    output = [paths[0]]
-    last_path_end = paths[0][-1]
-    visited = np.zeros(len(paths))
-    visited[0] = 1
-    paths_left = len(paths) - 1
-
-    while paths_left != 0:
-        lowest_distance = 100000
-        lowest_index = -1
-        for i in range(len(paths)):
-            if visited[i] == 0:
-                point_distance = distance(last_path_end, paths[i][0])
-                if point_distance < lowest_distance:
-                    lowest_distance = point_distance
-                    lowest_index = i
-        output.append(paths[lowest_index])
-        last_path_end = paths[lowest_index][-1]
-        paths_left -= 1
-        visited[lowest_index] = 1
-
-    return output
-
-#return svg points and paths given the svg file path
+# return svg points and paths given the svg file path
 def svg_to_paths(file_path: str, curve_resolution=0.3):
+    # returns a np matrix for the svg code line
+    def get_transform_matrix(str):
+        if 'matrix' not in str:
+            return np.eye(3)
 
-    def get_transform_matrix():
+        # remove "matrix(" and the ")" at the end
+        str = str[7:-1]
 
+        str = str.replace(",", " ")
 
-    #list of path objects, list of dictionaries of XML attributes
-    paths, attributes = svg_to_paths(file_path)
+        nums = str.split(" ")
+
+        vals = []
+
+        for val in nums:
+            vals.append(float(val))
+
+        return np.array([
+            [vals[0], vals[2], vals[4]],
+            [vals[1], vals[3], vals[5]],
+            [0, 0, 1]
+        ])
+
+    # list of path objects, list of dictionaries of XML attributes
+    paths, attributes = svg2paths(file_path)
 
     output_paths = []
 
-    #loop through the continuous paths
-    for path, attribute in zip(paths,attributes):
+    # loop through the continuous paths
+    for path, attribute in zip(paths, attributes):
 
-        path_matrix = get_transform_matrix
+        path_matrix = get_transform_matrix(attribute.get("transform", ""))
 
         output_path = []
 
-        #loop through the segments within each path
+        # loop through the segments within each path
         for segment in path:
 
             output_segment = []
 
-            start_x = segment.start.real
-            start_y = segment.start.imag
+            if not math.isnan(segment.start.real) and not math.isnan(segment.start.imag):
+                output_segment.append(get_transformed_point((segment.start.real, segment.start.imag), path_matrix))
 
-            end_x = segment.end.real
-            end_y = segment.end.imag
+            # segments can be a line, CubicBezier, QuadraticBezier, or Arc. Sample complex curve using parameters
+            if isinstance(segment, Line):
+                if not math.isnan(segment.end.real) and not math.isnan(segment.end.imag):
+                    output_segment.append(get_transformed_point((segment.end.real, segment.end.imag), path_matrix))
 
-            output_segment.append((start_x, start_y))
+            else:
+                num_samples = max(1, int(segment.length() * curve_resolution))
 
-            #segments can be a line, CubicBezier, QuadraticBezier, or Arc
-            if isinstance(segment, CubicBezier):
+                for i in range(1, num_samples + 1):
+                    t = i / num_samples
 
-            elif isinstance(segment, QuadraticBezier):
+                    try:
+                        point = segment.point(t)
+                        if not math.isnan(point.real) and not math.isnan(point.imag):
+                            output_segment.append(get_transformed_point((point.real, point.imag), path_matrix))
 
-            elif isinstance(segment, Arc):
+                    # skip divide by zero rounding error
+                    except ValueError:
+                        pass
 
-            output_segment.append((end_x, end_y))
-
-            output_path.append(output_segment)
+            output_path.extend(output_segment)
 
         output_paths.append(output_path)
 
-    return output_paths
+    return greedy(output_paths)
 
-#initial gcode
+
+# initial gcode
 def start_gcode(feed_rate: int):
     return [";$H ; Home all axes (move to limit switches)",
             ";$1=255 ; lock motors",
@@ -89,51 +93,51 @@ def start_gcode(feed_rate: int):
             "; starting plotting"
             ]
 
-#ending gcode
+# ending gcode
 def end_gcode():
     return ["; finished plotting",
             "; lift up pen",
             "G0X0Y0",
-            ";ug$1=0 ; unlock motors",]
+            ";ug$1=0 ; unlock motors", ]
 
-#generate gcode file
-def generate_gcode_from_svg(file_path: str, matrix: np.ndarray, feedrate: int, resolution=1):
+# generate gcode file
+def generate_gcode_from_svg(file_path: str, feedrate: int, matrix = IDENTITY_MATRIX, output_path_name="commands", resolution=0.03):
     start = start_gcode(feedrate)
     end = end_gcode()
 
-    points = svg_to_points(file_path, resolution)
+    path = svg_to_paths(file_path, resolution)
 
-    scaled_points = scale_svg_points(points, matrix)
+    transformed_path = transform_path(path, matrix)
 
-    paths = greedy(scaled_points)
+    output_path = Path(__file__).parent.parent / "data" / "svg_gcode_output" / f"{output_path_name}.gcode"
 
-    with open("./temp/commands.gcode", "w") as file:
-        #start gcode
+    with open(output_path, "w") as file:
+        # start gcode
         for cmd in start:
             file.write(cmd + "\n")
 
-        for path in paths:
+        for path in transformed_path:
             if len(path) > 1:
                 first = path[0]
 
-                #go to start of contour
-                file.write(f"G0 X{round(first[0],3)} Y{round(first[1],3)}" + "\n")
+                # go to start of contour
+                file.write(f"G0 X{round(first[0], 3)} Y{round(first[1], 3)}" + "\n")
 
                 # put marker down
                 file.write("M3 S1000;put marker down\n")
                 file.write("G4 P0.2\n")
 
-                #draw contour
+                # draw contour
                 for i in range(1, len(path)):
                     point = path[i]
-                    file.write(f"G1 X{round(point[0],3)} Y{round(point[1],3)}" + "\n")
+                    file.write(f"G1 X{round(point[0], 3)} Y{round(point[1], 3)}" + "\n")
 
                 # lift marker up
                 file.write("M5; lift marker up\n")
                 file.write("G4 P0.08\n")
 
-        #end gcode
+        # end gcode
         for cmd in end:
             file.write(cmd + "\n")
 
-    return f"./temp/{file_path}.gcode"
+    return f"backend/data/svg_gcode_output/{output_path_name}.gcode"

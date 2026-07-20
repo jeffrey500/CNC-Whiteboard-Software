@@ -11,3 +11,9 @@ ENV/
 .idea/
 
 .frontend/node_modules/
+
+.DS_Store
+
+./backend/temp/
+
+./backend/test/
