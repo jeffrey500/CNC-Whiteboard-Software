@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 import numpy as np
 
@@ -51,6 +52,47 @@ def transform_path(path: list[list[tuple[float, float]]], matrix: np.ndarray):
         output.append(transformed_points[:, :2])
 
     return output
+
+def generate_gcode_from_path(paths, svg: bool, feedrate=3000, output_path_name="commands"):
+    start = start_gcode(feedrate)
+    end = end_gcode()
+
+    if svg:
+        output_path = Path(__file__).parent.parent / "data" / "svg_gcode_output" / f"{output_path_name}.gcode"
+    else:
+        output_path = Path(__file__).parent.parent / "data" / "image_gcode_output" / f"{output_path_name}.gcode"
+
+    with open(output_path, "w") as file:
+        # start gcode
+        for cmd in start:
+            file.write(cmd + "\n")
+
+        for path in paths:
+            if len(path) > 1:
+                first = path[0]
+
+                # go to start of contour
+                file.write(f"G0 X{round(first[0], 3)} Y{round(first[1], 3)}" + "\n")
+
+                # put marker down
+                file.write("M3 S1000;put marker down\n")
+                file.write("G4 P0.2\n")
+
+                # draw contour
+                for i in range(1, len(path)):
+                    point = path[i]
+                    file.write(f"G1 X{round(point[0], 3)} Y{round(point[1], 3)}" + "\n")
+
+                # lift marker up
+                file.write("M5; lift marker up\n")
+                file.write("G4 P0.08\n")
+
+        # end gcode
+        for cmd in end:
+            file.write(cmd + "\n")
+
+    return output_path
+
 
 # initial gcode
 def start_gcode(feed_rate: int):

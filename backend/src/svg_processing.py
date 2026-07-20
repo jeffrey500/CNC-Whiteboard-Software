@@ -2,7 +2,7 @@ import math
 from pathlib import Path
 
 from svgpathtools import svg2paths, Line
-from path_functions import greedy, get_transformed_point, transform_path, start_gcode, end_gcode
+from path_functions import greedy, get_transformed_point, transform_path, start_gcode, end_gcode, generate_gcode_from_path
 import numpy as np
 
 IDENTITY_MATRIX = np.array([[1,0,0], [0,1,0], [0,0,1]])
@@ -79,43 +79,14 @@ def svg_to_paths(file_path: str, curve_resolution=0.3):
     return greedy(output_paths)
 
 # generate gcode file
-def generate_gcode_from_svg(file_path: str, feedrate: int, matrix = IDENTITY_MATRIX, output_path_name="commands", resolution=0.03):
-    start = start_gcode(feedrate)
-    end = end_gcode()
+def generate_gcode_from_svg(file_name: str, output_path_name:str, feedrate=3000, matrix = IDENTITY_MATRIX, resolution=0.03):
+
+    file_path = Path(__file__).parent.parent / "data" / "svg_inputs" / file_name
 
     path = svg_to_paths(file_path, resolution)
 
     transformed_path = transform_path(path, matrix)
 
-    output_path = Path(__file__).parent.parent / "data" / "svg_gcode_output" / f"{output_path_name}.gcode"
+    return generate_gcode_from_path(transformed_path,True, feedrate, output_path_name)
 
-    with open(output_path, "w") as file:
-        # start gcode
-        for cmd in start:
-            file.write(cmd + "\n")
-
-        for path in transformed_path:
-            if len(path) > 1:
-                first = path[0]
-
-                # go to start of contour
-                file.write(f"G0 X{round(first[0], 3)} Y{round(first[1], 3)}" + "\n")
-
-                # put marker down
-                file.write("M3 S1000;put marker down\n")
-                file.write("G4 P0.2\n")
-
-                # draw contour
-                for i in range(1, len(path)):
-                    point = path[i]
-                    file.write(f"G1 X{round(point[0], 3)} Y{round(point[1], 3)}" + "\n")
-
-                # lift marker up
-                file.write("M5; lift marker up\n")
-                file.write("G4 P0.08\n")
-
-        # end gcode
-        for cmd in end:
-            file.write(cmd + "\n")
-
-    return f"backend/data/svg_gcode_output/{output_path_name}.gcode"
+# generate_gcode_from_svg("image.svg", "temp")
