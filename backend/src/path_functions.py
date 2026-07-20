@@ -51,3 +51,23 @@ def transform_path(path: list[list[tuple[float, float]]], matrix: np.ndarray):
         output.append(transformed_points[:, :2])
 
     return output
+
+# initial gcode
+def start_gcode(feed_rate: int):
+    return [";$H ; Home all axes (move to limit switches)",
+            ";$1=255 ; lock motors",
+            "G28.1 ; set new home after homing",
+            "G21 ; Set units to Millimeters",
+            "G90 ; Set to Absolute Positioning",
+            "G17 ; Select XY plane (standard for 2D plotting)",
+            "; lift up pen",
+            f"G94F{feed_rate} ; Set feed rate mode to \"units per minute\"",
+            "; starting plotting"
+            ]
+
+# ending gcode
+def end_gcode():
+    return ["; finished plotting",
+            "; lift up pen",
+            "G0X0Y0",
+            ";ug$1=0 ; unlock motors", ]

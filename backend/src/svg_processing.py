@@ -1,9 +1,8 @@
 import math
-from os import mkdir
 from pathlib import Path
 
-from svgpathtools import svg2paths, CubicBezier, QuadraticBezier, Arc, Line
-from path_functions import greedy, get_transformed_point, transform_path
+from svgpathtools import svg2paths, Line
+from path_functions import greedy, get_transformed_point, transform_path, start_gcode, end_gcode
 import numpy as np
 
 IDENTITY_MATRIX = np.array([[1,0,0], [0,1,0], [0,0,1]])
@@ -78,27 +77,6 @@ def svg_to_paths(file_path: str, curve_resolution=0.3):
         output_paths.append(output_path)
 
     return greedy(output_paths)
-
-
-# initial gcode
-def start_gcode(feed_rate: int):
-    return [";$H ; Home all axes (move to limit switches)",
-            ";$1=255 ; lock motors",
-            "G28.1 ; set new home after homing",
-            "G21 ; Set units to Millimeters",
-            "G90 ; Set to Absolute Positioning",
-            "G17 ; Select XY plane (standard for 2D plotting)",
-            "; lift up pen",
-            f"G94F{feed_rate} ; Set feed rate mode to \"units per minute\"",
-            "; starting plotting"
-            ]
-
-# ending gcode
-def end_gcode():
-    return ["; finished plotting",
-            "; lift up pen",
-            "G0X0Y0",
-            ";ug$1=0 ; unlock motors", ]
 
 # generate gcode file
 def generate_gcode_from_svg(file_path: str, feedrate: int, matrix = IDENTITY_MATRIX, output_path_name="commands", resolution=0.03):
