@@ -1,5 +1,7 @@
 import time
+
 import serial
+
 
 def send_gcode(gcode_file: str, port: str):
     s = serial.Serial(port, 115200)
@@ -11,7 +13,7 @@ def send_gcode(gcode_file: str, port: str):
 
         print(file)
 
-        for i in range(10,len(file)):
+        for i in range(10, len(file)):
             # 1. Send the command
             print(f"Sending: {file[i]}")
             s.write((file[i] + '\n').encode())  # Send command + newline

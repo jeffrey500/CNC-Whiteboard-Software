@@ -1,11 +1,12 @@
 import math
 from pathlib import Path
 
-from svgpathtools import svg2paths, Line
-from path_functions import greedy, get_transformed_point, transform_path, start_gcode, end_gcode, generate_gcode_from_path
 import numpy as np
+from svgpathtools import svg2paths, Line
 
-IDENTITY_MATRIX = np.array([[1,0,0], [0,1,0], [0,0,1]])
+from path_functions import greedy, get_transformed_point, transform_path, generate_gcode_from_path
+
+IDENTITY_MATRIX = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
 # return svg points and paths given the svg file path
 def svg_to_paths(file_path: str, curve_resolution=0.3):
@@ -78,15 +79,16 @@ def svg_to_paths(file_path: str, curve_resolution=0.3):
 
     return greedy(output_paths)
 
-# generate gcode file
-def generate_gcode_from_svg(file_name: str, output_path_name:str, feedrate=3000, matrix = IDENTITY_MATRIX, resolution=0.03):
 
+# generate gcode file
+def generate_gcode_from_svg(file_name: str, output_path_name: str, feedrate=3000, matrix=IDENTITY_MATRIX,
+                            resolution=0.03):
     file_path = Path(__file__).parent.parent / "data" / "svg_inputs" / file_name
 
     path = svg_to_paths(file_path, resolution)
 
     transformed_path = transform_path(path, matrix)
 
-    return generate_gcode_from_path(transformed_path,True, feedrate, output_path_name)
+    return generate_gcode_from_path(transformed_path, True, feedrate, output_path_name)
 
 # generate_gcode_from_svg("image.svg", "temp")

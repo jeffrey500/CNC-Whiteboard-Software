@@ -3,10 +3,10 @@ from pathlib import Path
 
 import numpy as np
 
+
 # return the optimal order of paths
 def greedy(path: list[list[tuple[float, float]]]):
-
-    #euclidean distance between two coordinates
+    # Euclidean distance between two coordinates
     def distance(coord1, coord2):
         return math.sqrt(math.pow(coord1[0] - coord2[0], 2) + math.pow(coord1[1] - coord2[1], 2))
 
@@ -32,12 +32,14 @@ def greedy(path: list[list[tuple[float, float]]]):
 
     return output
 
+
 def get_transformed_point(point: list[list[tuple[float, float]]], matrix: np.ndarray):
-        vector_point = np.array([point[0], point[1], 1])
+    vector_point = np.array([point[0], point[1], 1])
 
-        transformed = matrix @ vector_point
+    transformed = matrix @ vector_point
 
-        return transformed[:2]
+    return transformed[:2]
+
 
 def transform_path(path: list[list[tuple[float, float]]], matrix: np.ndarray):
     output = []
@@ -53,7 +55,8 @@ def transform_path(path: list[list[tuple[float, float]]], matrix: np.ndarray):
 
     return output
 
-def generate_gcode_from_path(paths, svg: bool, feedrate=3000, output_path_name="commands"):
+
+def generate_gcode_from_path(paths, svg: bool, feedrate=30000, output_path_name="commands", offset=(60, -15)):
     start = start_gcode(feedrate)
     end = end_gcode()
 
@@ -72,7 +75,7 @@ def generate_gcode_from_path(paths, svg: bool, feedrate=3000, output_path_name="
                 first = path[0]
 
                 # go to start of contour
-                file.write(f"G0 X{round(first[0], 3)} Y{round(first[1], 3)}" + "\n")
+                file.write(f"G0 X{round(first[0], 3) + offset[0]} Y{round(first[1], 3) + offset[1]}" + "\n")
 
                 # put marker down
                 file.write("M3 S1000;put marker down\n")
@@ -81,7 +84,7 @@ def generate_gcode_from_path(paths, svg: bool, feedrate=3000, output_path_name="
                 # draw contour
                 for i in range(1, len(path)):
                     point = path[i]
-                    file.write(f"G1 X{round(point[0], 3)} Y{round(point[1], 3)}" + "\n")
+                    file.write(f"G1 X{round(point[0], 3) + offset[0]} Y{round(point[1], 3) + offset[1]}" + "\n")
 
                 # lift marker up
                 file.write("M5; lift marker up\n")
@@ -106,6 +109,7 @@ def start_gcode(feed_rate: int):
             f"G94F{feed_rate} ; Set feed rate mode to \"units per minute\"",
             "; starting plotting"
             ]
+
 
 # ending gcode
 def end_gcode():

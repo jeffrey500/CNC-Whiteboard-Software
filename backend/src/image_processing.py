@@ -3,47 +3,47 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-
 from scipy.ndimage import convolve
-from scipy.spatial import distance
 
+from backend.src.path_functions import greedy
 from path_functions import generate_gcode_from_path
 
+
 def generate_transformed_image(file_path: str, tag_length=85, tag_x_d=1860, tag_y_d=1030):
-    #for april tags, the coordinates within the april tags are in the following order: top left, top right, bottom right, bottom left
+    # for april tags, the coordinates within the april tags are in the following order: top left, top right, bottom right, bottom left
 
-    x_length, y_length = 2*tag_length + tag_x_d, 2*tag_length + tag_y_d
+    x_length, y_length = 2 * tag_length + tag_x_d, 2 * tag_length + tag_y_d
 
-    #determine real-world positions of the whiteboard april tags
+    # determine real-world positions of the whiteboard april tags
     real_corners = {}
 
     for i, (x, y) in enumerate([(0, 0), (tag_length + tag_x_d, 0), (0, tag_length + tag_y_d),
                                 (tag_length + tag_x_d, tag_length + tag_y_d)]):
         real_corners[i + 1] = [(x, y), (x + tag_length, y), (x + tag_length, y + tag_length), (x, y + tag_length)]
 
-    #load image as greyscale
-    image = cv2.imread(file_path,0)
+    # load image as greyscale
+    image = cv2.imread(file_path, 0)
 
-    #Load april tag dictionary, detector params, and detect the april tags
+    # Load april tag dictionary, detector params, and detect the april tags
     aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_16h5)
     aruco_params = cv2.aruco.DetectorParameters()
     detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
     corners, ids, _ = detector.detectMarkers(image)
 
-    #determine transformation matrix
+    # determine transformation matrix
 
-    #build the real and image coordinate vectors
-    real_cords,  image_cords = [], []
+    # build the real and image coordinate vectors
+    real_cords, image_cords = [], []
 
     if ids is not None:
         for marker_id, corner in zip(ids.flatten(), corners):
             real_cords.extend(real_corners[int(marker_id)])
             image_cords.extend(corner[0])
 
-    real_cords = np.array(real_cords,dtype=np.float32)
+    real_cords = np.array(real_cords, dtype=np.float32)
     image_cords = np.array(image_cords, dtype=np.float32)
 
-    #calculate transform matrix
+    # calculate transform matrix
     if len(real_cords) >= 4 and len(image_cords) >= 4:
         transform_matrix, _ = cv2.findHomography(image_cords, real_cords, cv2.RANSAC, 5)
     else:
@@ -53,10 +53,11 @@ def generate_transformed_image(file_path: str, tag_length=85, tag_x_d=1860, tag_
 
     return transformed_image
 
+
 def generate_paths(transformed_image, tag_length=85, tag_x_d=1860, tag_y_d=1030):
     x_length, y_length = 2 * tag_length + tag_x_d, 2 * tag_length + tag_y_d
 
-    #blur image to soften glare
+    # blur image to soften glare
     blurred = cv2.GaussianBlur(transformed_image, (5, 5), 0)
 
     # cv2.imshow("blurred", blurred)
@@ -71,7 +72,7 @@ def generate_paths(transformed_image, tag_length=85, tag_x_d=1860, tag_y_d=1030)
         10  # C-value: How much to subtract from the local mean to tune out background noise
     )
 
-    #get the skeleton of the image
+    # get the skeleton of the image
     skeleton = cv2.ximgproc.thinning(binary, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
 
     # cut edges
@@ -89,21 +90,21 @@ def generate_paths(transformed_image, tag_length=85, tag_x_d=1860, tag_y_d=1030)
     # cv2.imshow("skeleton",skeleton)
     # cv2.waitKey(0)
 
-    #normalize the pixels to be of value 1
+    # normalize the pixels to be of value 1
     normal = skeleton // 255
 
-    #kernel adds the surrounding pixel values
+    # kernel adds the surrounding pixel values
     kernel = np.array([[1, 1, 1],
                        [1, 10, 1],
                        [1, 1, 1]], dtype=np.uint8)
 
-    #build up a map of the features
+    # build up a map of the features
     filtered = convolve(normal, kernel, mode='constant', cval=0)
 
-    #10 = isolated dot
-    #11 = endpoint
-    #12 = line
-    #13 >= junction
+    # 10 = isolated dot
+    # 11 = endpoint
+    # 12 = line
+    # 13 >= junction
 
     endpoints = []
 
@@ -113,28 +114,28 @@ def generate_paths(transformed_image, tag_length=85, tag_x_d=1860, tag_y_d=1030)
     for i in range(len(filtered)):
         for j in range(len(filtered[0])):
             if filtered[i][j] == 11:
-                endpoints.append((i,j))
+                endpoints.append((i, j))
 
     output_path = []
 
-    #dfs to follow the path from the endpoints
-    def dfs(x,y,output):
-        stack = [(x,y)]
-        prev = (-1,-1)
+    # dfs to follow the path from the endpoints
+    def dfs(x, y, output):
+        stack = [(x, y)]
+        prev = (-1, -1)
 
         while stack:
             xn, yn = stack.pop()
 
-            #ignore if the euclidean distance is more than 5
-            if normal[xn][yn] == 255 or normal[xn][yn] == 0 or (prev != (-1,-1) and math.dist(prev,(xn,yn)) > 10):
+            # ignore if the euclidean distance is more than 5
+            if normal[xn][yn] == 255 or normal[xn][yn] == 0 or (prev != (-1, -1) and math.dist(prev, (xn, yn)) > 10):
                 # mark visited
                 normal[xn][yn] = 255
                 continue
 
-            #add to output and mark visited
+            # add to output and mark visited
             normal[xn][yn] = 255
             output.append((yn, xn))
-            prev = (xn,yn)
+            prev = (xn, yn)
 
             for xd, yd in [(xn - 1, yn), (xn - 1, yn + 1), (xn, yn + 1), (xn + 1, yn + 1),
                            (xn + 1, yn), (xn + 1, yn - 1), (xn, yn - 1), (xn - 1, yn - 1)]:
@@ -143,7 +144,7 @@ def generate_paths(transformed_image, tag_length=85, tag_x_d=1860, tag_y_d=1030)
                 else:
                     stack.append((xd, yd))
 
-    #loop through all the endpoints and gather the paths
+    # loop through all the endpoints and gather the paths
     while endpoints:
         start = endpoints.pop()
         endpoint_output = []
@@ -154,6 +155,7 @@ def generate_paths(transformed_image, tag_length=85, tag_x_d=1860, tag_y_d=1030)
             output_path.append(endpoint_output)
 
     return output_path
+
 
 def visualize_paths(paths, height, width):
     # Create a blank white canvas matching the image dimensions
@@ -178,21 +180,22 @@ def visualize_paths(paths, height, width):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-def generate_gcode_from_image(file_name: str, feedrate=3000, output_path_name="commands", tag_length=85, tag_x_d=1860, tag_y_d=1030):
+
+def generate_gcode_from_image(file_name: str, feedrate=30000, output_path_name="commands", tag_length=85, tag_x_d=1860,
+                              tag_y_d=1030):
     file_path = Path(__file__).parent.parent / "data" / "image_inputs" / file_name
 
-    transformed_image = generate_transformed_image(file_path,tag_length,tag_x_d,tag_y_d)
+    transformed_image = generate_transformed_image(file_path, tag_length, tag_x_d, tag_y_d)
 
     # cv2.imshow("transformed_image", transformed_image)
     # cv2.waitKey(0)
 
-    paths = generate_paths(transformed_image)
+    paths = greedy(generate_paths(transformed_image))
 
     h, w = transformed_image.shape[:2]
     visualize_paths(paths, h, w)
 
     return generate_gcode_from_path(paths, False, feedrate, output_path_name)
 
-generate_gcode_from_image(file_name="test.jpg", output_path_name="test")
 
-
+generate_gcode_from_image(file_name="test.jpg", output_path_name="test", feedrate=30000)
