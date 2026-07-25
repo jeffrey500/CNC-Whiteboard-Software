@@ -17,3 +17,5 @@ ENV/
 ./backend/temp/
 
 ./backend/test/
+
+.oxlintrc.json
