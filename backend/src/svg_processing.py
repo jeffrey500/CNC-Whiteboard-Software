@@ -74,9 +74,18 @@ def svg_to_paths(file_path: str, curve_resolution=0.3):
                     except ValueError:
                         pass
 
+            # check if there's a physical jump between the last point and this new segment
+            if len(output_path) > 0 and len(output_segment) > 0:
+
+                # if gap is greater than 0.05 then there is a pen lift
+                if math.dist(output_path[-1], output_segment[0]) > 0.05:
+                    output_paths.append(output_path)
+                    output_path = []
+
             output_path.extend(output_segment)
 
-        output_paths.append(output_path)
+        if output_path:
+            output_paths.append(output_path)
 
     return pf.greedy(output_paths)
 

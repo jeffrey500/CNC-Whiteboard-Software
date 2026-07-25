@@ -3,13 +3,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
+import numpy as np
 import psycopg2
 import uvicorn
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from starlette import status
 
-import backend.db as db
-from backend.model import Image
+import src.db as db
+from src.model import Image, SVG, SVGEditRequest
 from src.image_processing import generate_gcode_from_image
 from src.svg_processing import generate_gcode_from_svg
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,6 +35,7 @@ conn = psycopg2.connect(
     port="5432"
 )
 
+
 # expose static files
 app.mount("/static", StaticFiles(directory="backend/data"), name="static")
 
@@ -43,13 +45,13 @@ app.mount("/static", StaticFiles(directory="backend/data"), name="static")
 async def create_image(file: Annotated[UploadFile, File()]):
     # save the uploaded file to the "data/image_inputs" directory
     filename = file.filename
-    file_path = Path(__file__).parent / "data" / "image_inputs" / filename
+    file_path = Path(__file__).parent.parent / "data" / "image_inputs" / filename
 
     # gcode file name
-    gcode_filename = (Path(__file__).parent / "data" / "image_gcode_output" / filename).with_suffix(".gcode")
+    gcode_filename = (Path(__file__).parent.parent / "data" / "image_gcode_output" / filename).with_suffix(".gcode")
 
     # render file name
-    render = (Path(__file__).parent / "data" / "image_render" / filename).with_suffix(".png")
+    render = (Path(__file__).parent.parent / "data" / "image_render" / filename).with_suffix(".png")
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -114,23 +116,26 @@ def delete_image(id: int):
 # upload svg to database
 @app.post("/svg/", status_code=201)
 async def create_svg(file: Annotated[UploadFile, File()]):
-    # save the uploaded file to the "data/svg_inputs" directory
+    # save the uploaded file to the "data/image_inputs" directory
     filename = file.filename
-    file_path = Path(__file__).parent / "data" / "svg_inputs" / filename
+    file_path = Path(__file__).parent.parent / "data" / "svg_inputs" / filename
 
     # gcode file name
-    gcode_filename = file_path.with_suffix(".gcode")
+    gcode_filename = (Path(__file__).parent.parent / "data" / "svg_gcode_output" / filename).with_suffix(".gcode")
+
+    # render file name
+    render = (Path(__file__).parent.parent / "data" / "svg_render" / filename).with_suffix(".png")
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     try:
         # convert svg to gcode and get timestamp
-        generate_gcode_from_svg(filename)
+        generate_gcode_from_svg(file_name=filename, output_path_name=file_path.stem)
         current_time = datetime.now(timezone.utc)
 
-        # insert image into database
-        db.image_insert(conn, filename, current_time, str(file_path), gcode_filename)
+        # insert svg into database
+        db.svg_insert(conn, filename, current_time, str(file_path), str(gcode_filename), str(render))
 
     except Exception as e:
         raise HTTPException(
@@ -140,19 +145,19 @@ async def create_svg(file: Annotated[UploadFile, File()]):
 
 
 # get all svgs in database
-@app.post("/svg/", status_code=200)
+@app.get("/svg/", response_model=list[SVG])
 def get_svgs():
     try:
-        return db.get_svgs(conn, id)
+        return db.get_svgs(conn)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
 
 
 # get a specific svg from database
-@app.get("/svg/{id}", response_model=Image, status_code=200)
+@app.get("/svg/{id}", response_model=SVG, status_code=200)
 def get_svg(id: int):
     try:
         return db.get_svg(conn, id)
@@ -167,13 +172,36 @@ def get_svg(id: int):
 @app.delete("/svg/{id}", status_code=204)
 def delete_svg(id: int):
     try:
-        return db.delete_svg(conn, id)
+        # delete svg entry from database
+        file_paths = db.delete_svg(conn, id)
+
+        # delete svg and gcode files
+        for file_path in file_paths:
+            Path(file_path).unlink(missing_ok=True)
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
 
+# re-render a specific svg from database
+@app.put("/svg/{id}", status_code=201)
+def edit_svg(id: int, params: SVGEditRequest):
+    try:
+        # edit svg entry from database
+        matrix = np.array([[params.x_factor, 0, 0], [0, params.y_factor, 0], [0, 0, 1]])
+
+        svg = db.get_svg(conn, id)
+        file_name = Path(svg.name)
+
+        generate_gcode_from_svg(file_name=(file_name.stem),output_path_name=svg.name,matrix=matrix)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
 
 if __name__ == "__main__":
     # Specify the port keyword argument here
@@ -181,5 +209,3 @@ if __name__ == "__main__":
 
     # DB close
     conn.close()
-
-# Need another endpoint for starting plotting

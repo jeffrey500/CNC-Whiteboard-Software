@@ -73,12 +73,13 @@ def visualize_paths(paths, filename, svg: bool, height=1200, width=2030):
             cv2.polylines(canvas, [pts], isClosed=False, color=color, thickness=2)
 
             # draw the start points in red
-            cv2.circle(canvas, path[0], radius=3, color=(0, 0, 255), thickness=-1)
+            start_point = (int(path[0][0]), int(path[0][1]))
+            cv2.circle(canvas, start_point, radius=3, color=(0, 0, 255), thickness=-1)
 
     filename = Path(filename).stem
 
     if svg:
-        cv2.imwrite(Path(__file__).parent.parent / "data" / "svg_paths" / f"{str(filename)}.png", canvas)
+        cv2.imwrite(Path(__file__).parent.parent / "data" / "svg_render" / f"{str(filename)}.png", canvas)
     else:
         cv2.imwrite(Path(__file__).parent.parent / "data" / "image_render" / f"{str(filename)}.png", canvas)
 
