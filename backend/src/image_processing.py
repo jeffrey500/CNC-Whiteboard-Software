@@ -5,8 +5,7 @@ import cv2
 import numpy as np
 from scipy.ndimage import convolve
 
-from backend.src.path_functions import greedy
-from path_functions import generate_gcode_from_path
+import src.path_functions as pf
 
 
 def generate_transformed_image(file_path: str, tag_length=85, tag_x_d=1860, tag_y_d=1030):
@@ -157,45 +156,14 @@ def generate_paths(transformed_image, tag_length=85, tag_x_d=1860, tag_y_d=1030)
     return output_path
 
 
-def visualize_paths(paths, height, width):
-    # Create a blank white canvas matching the image dimensions
-    canvas = np.ones((height, width, 3), dtype=np.uint8) * 255
-
-    for path in paths:
-        if len(path) > 1:
-            # Generate a random dark color for each stroke to easily tell them apart
-            color = tuple(np.random.randint(0, 150, 3).tolist())
-
-            # OpenCV polylines requires coordinates as a numpy array of shape (N, 1, 2)
-            pts = np.array(path, np.int32).reshape((-1, 1, 2))
-
-            # Draw the continuous path
-            cv2.polylines(canvas, [pts], isClosed=False, color=color, thickness=2)
-
-            # draw the start points in red
-            cv2.circle(canvas, path[0], radius=3, color=(0, 0, 255), thickness=-1)
-
-    # Display the result
-    cv2.imshow("DFS Paths Visualization", canvas)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
 def generate_gcode_from_image(file_name: str, feedrate=30000, output_path_name="commands", tag_length=85, tag_x_d=1860,
                               tag_y_d=1030):
     file_path = Path(__file__).parent.parent / "data" / "image_inputs" / file_name
 
     transformed_image = generate_transformed_image(file_path, tag_length, tag_x_d, tag_y_d)
 
-    # cv2.imshow("transformed_image", transformed_image)
-    # cv2.waitKey(0)
+    paths = pf.greedy(generate_paths(transformed_image))
 
-    paths = greedy(generate_paths(transformed_image))
+    pf.visualize_paths(paths, file_name, False)
 
-    h, w = transformed_image.shape[:2]
-    visualize_paths(paths, h, w)
-
-    return generate_gcode_from_path(paths, False, feedrate, output_path_name)
-
-
-generate_gcode_from_image(file_name="test.jpg", output_path_name="test", feedrate=30000)
+    return pf.generate_gcode_from_path(paths, False, feedrate, output_path_name)

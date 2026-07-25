@@ -8,12 +8,22 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from starlette import status
 
-from backend.db import image_insert, get_images, get_image
+import backend.db as db
 from backend.model import Image
 from src.image_processing import generate_gcode_from_image
 from src.svg_processing import generate_gcode_from_svg
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Update this if React is on a different port
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # DB connection
 conn = psycopg2.connect(
@@ -24,28 +34,33 @@ conn = psycopg2.connect(
     port="5432"
 )
 
+# expose static files
+app.mount("/static", StaticFiles(directory="backend/data"), name="static")
+
 
 # upload image to database
 @app.post("/image/", status_code=201)
 async def create_image(file: Annotated[UploadFile, File()]):
-
     # save the uploaded file to the "data/image_inputs" directory
     filename = file.filename
     file_path = Path(__file__).parent / "data" / "image_inputs" / filename
 
     # gcode file name
-    gcode_filename = file_path.with_suffix(".gcode")
+    gcode_filename = (Path(__file__).parent / "data" / "image_gcode_output" / filename).with_suffix(".gcode")
+
+    # render file name
+    render = (Path(__file__).parent / "data" / "image_render" / filename).with_suffix(".png")
 
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     try:
         # convert image to gcode and get timestamp
-        generate_gcode_from_image(gcode_filename)
+        generate_gcode_from_image(file_name=filename, output_path_name=file_path.stem)
         current_time = datetime.now(timezone.utc)
 
         # insert image into database
-        image_insert(conn, filename, current_time, str(file_path), gcode_filename)
+        db.image_insert(conn, filename, current_time, str(file_path), str(gcode_filename), str(render))
 
     except Exception as e:
         raise HTTPException(
@@ -56,9 +71,9 @@ async def create_image(file: Annotated[UploadFile, File()]):
 
 # get all images in database
 @app.get("/image/", response_model=list[Image])
-def list_images():
+def get_images():
     try:
-        return get_images(conn)
+        return db.get_images(conn)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -68,9 +83,9 @@ def list_images():
 
 # get a specific image from database
 @app.get("/image/{id}", response_model=Image, status_code=200)
-def list_image(id: int):
+def get_image(id: int):
     try:
-        return get_image(conn, id)
+        return db.get_image(conn, id)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -82,7 +97,13 @@ def list_image(id: int):
 @app.delete("/image/{id}", status_code=204)
 def delete_image(id: int):
     try:
-        delete_image(conn, id)
+        # delete image entry from database
+        file_paths = db.delete_image(conn, id)
+
+        # delete image and gcode files
+        for file_path in file_paths:
+            Path(file_path).unlink(missing_ok=True)
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -105,11 +126,11 @@ async def create_svg(file: Annotated[UploadFile, File()]):
 
     try:
         # convert svg to gcode and get timestamp
-        generate_gcode_from_svg(gcode_filename)
+        generate_gcode_from_svg(filename)
         current_time = datetime.now(timezone.utc)
 
         # insert image into database
-        image_insert(conn, filename, current_time, str(file_path), gcode_filename)
+        db.image_insert(conn, filename, current_time, str(file_path), gcode_filename)
 
     except Exception as e:
         raise HTTPException(
@@ -117,9 +138,42 @@ async def create_svg(file: Annotated[UploadFile, File()]):
             detail=str(e)
         )
 
+
 # get all svgs in database
+@app.post("/svg/", status_code=200)
+def get_svgs():
+    try:
+        return db.get_svgs(conn, id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
 
 # get a specific svg from database
+@app.get("/svg/{id}", response_model=Image, status_code=200)
+def get_svg(id: int):
+    try:
+        return db.get_svg(conn, id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+
+# delete a specific svg from database
+@app.delete("/svg/{id}", status_code=204)
+def delete_svg(id: int):
+    try:
+        return db.delete_svg(conn, id)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
 
 if __name__ == "__main__":
     # Specify the port keyword argument here
@@ -128,5 +182,4 @@ if __name__ == "__main__":
     # DB close
     conn.close()
 
-#Need another endpoint for starting plotting
-
+# Need another endpoint for starting plotting

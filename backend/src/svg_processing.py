@@ -4,9 +4,10 @@ from pathlib import Path
 import numpy as np
 from svgpathtools import svg2paths, Line
 
-from path_functions import greedy, get_transformed_point, transform_path, generate_gcode_from_path
+import src.path_functions as pf
 
 IDENTITY_MATRIX = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
 
 # return svg points and paths given the svg file path
 def svg_to_paths(file_path: str, curve_resolution=0.3):
@@ -51,12 +52,12 @@ def svg_to_paths(file_path: str, curve_resolution=0.3):
             output_segment = []
 
             if not math.isnan(segment.start.real) and not math.isnan(segment.start.imag):
-                output_segment.append(get_transformed_point((segment.start.real, segment.start.imag), path_matrix))
+                output_segment.append(pf.get_transformed_point((segment.start.real, segment.start.imag), path_matrix))
 
             # segments can be a line, CubicBezier, QuadraticBezier, or Arc. Sample complex curve using parameters
             if isinstance(segment, Line):
                 if not math.isnan(segment.end.real) and not math.isnan(segment.end.imag):
-                    output_segment.append(get_transformed_point((segment.end.real, segment.end.imag), path_matrix))
+                    output_segment.append(pf.get_transformed_point((segment.end.real, segment.end.imag), path_matrix))
 
             else:
                 num_samples = max(1, int(segment.length() * curve_resolution))
@@ -67,7 +68,7 @@ def svg_to_paths(file_path: str, curve_resolution=0.3):
                     try:
                         point = segment.point(t)
                         if not math.isnan(point.real) and not math.isnan(point.imag):
-                            output_segment.append(get_transformed_point((point.real, point.imag), path_matrix))
+                            output_segment.append(pf.get_transformed_point((point.real, point.imag), path_matrix))
 
                     # skip divide by zero rounding error
                     except ValueError:
@@ -77,7 +78,7 @@ def svg_to_paths(file_path: str, curve_resolution=0.3):
 
         output_paths.append(output_path)
 
-    return greedy(output_paths)
+    return pf.greedy(output_paths)
 
 
 # generate gcode file
@@ -87,8 +88,8 @@ def generate_gcode_from_svg(file_name: str, output_path_name: str, feedrate=3000
 
     path = svg_to_paths(file_path, resolution)
 
-    transformed_path = transform_path(path, matrix)
+    transformed_path = pf.transform_path(path, matrix)
 
-    return generate_gcode_from_path(transformed_path, True, feedrate, output_path_name)
+    pf.visualize_paths(transformed_path, file_name, True)
 
-# generate_gcode_from_svg("image.svg", "temp")
+    return pf.generate_gcode_from_path(transformed_path, True, feedrate, output_path_name)
