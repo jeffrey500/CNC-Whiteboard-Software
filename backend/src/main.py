@@ -28,7 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+# DB connection
 while True:
     try:
         conn = psycopg2.connect(
