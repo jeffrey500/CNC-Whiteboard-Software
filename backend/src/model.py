@@ -23,3 +23,6 @@ class SVGEditRequest(BaseModel):
     x_translate: float
     y_scale: float
     y_translate: float
+
+class PlotRequest(BaseModel):
+    port: str

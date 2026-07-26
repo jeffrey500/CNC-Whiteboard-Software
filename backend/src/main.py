@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, File, UploadFile
 from starlette import status
 
 import src.db as db
-from src.model import Image, SVG, SVGEditRequest
+from src.model import Image, SVG, SVGEditRequest, PlotRequest
 from src.image_processing import generate_gcode_from_image
 from src.plot import send_gcode
 from src.svg_processing import generate_gcode_from_svg
@@ -114,6 +114,23 @@ def delete_image(id: int):
         )
 
 
+# plot image gcode
+@app.post("/image/plot/{id}", status_code=200)
+def plot_image(id: int, params: PlotRequest):
+    try:
+        img = db.get_image(conn, id)
+        file_name = Path(img.name)
+        file_path =  Path(__file__).parent.parent / "data" / "image_gcode_output" / f"{file_name.stem}.gcode"
+
+        send_gcode(str(file_path), params.port)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+
 # upload svg to database
 @app.post("/svg/", status_code=201)
 async def create_svg(file: Annotated[UploadFile, File()]):
@@ -191,7 +208,7 @@ def delete_svg(id: int):
 def edit_svg(id: int, params: SVGEditRequest):
     try:
         # edit svg entry from database
-        matrix = np.array([[params.x_scale, params.x_translate, 0], [0, params.y_scale, params.y_translate], [0, 0, 1]])
+        matrix = np.array([[params.x_scale, 0, params.x_translate], [0, params.y_scale, params.y_translate], [0, 0, 1]])
 
         svg = db.get_svg(conn, id)
         file_name = Path(svg.name)
@@ -207,30 +224,13 @@ def edit_svg(id: int, params: SVGEditRequest):
 
 # plot svg gcode
 @app.post("/svg/plot/{id}", status_code=200)
-def plot_svg(id: int):
+def plot_svg(id: int, params: PlotRequest):
     try:
         svg = db.get_svg(conn, id)
         file_name = Path(svg.name)
         file_path =  Path(__file__).parent.parent / "data" / "svg_gcode_output" / f"{file_name.stem}.gcode"
 
-        send_gcode(str(file_path), "COM3")
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
-        )
-
-
-# plot image gcode
-@app.post("/image/plot/{id}", status_code=200)
-def plot_svg(id: int):
-    try:
-        svg = db.get_image(conn, id)
-        file_name = Path(svg.name)
-        file_path =  Path(__file__).parent.parent / "data" / "image_gcode_output" / f"{file_name.stem}.gcode"
-
-        send_gcode(str(file_path), "COM3")
+        send_gcode(str(file_path), params.port)
 
     except Exception as e:
         raise HTTPException(

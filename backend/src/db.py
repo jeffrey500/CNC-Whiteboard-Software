@@ -21,7 +21,7 @@ def get_images(conn):
     try:
         with conn.cursor() as cursor:
             # define and execute the SELECT query
-            query = "SELECT * FROM images ORDER BY timestamp;"
+            query = "SELECT * FROM images ORDER BY timestamp DESC;"
             cursor.execute(query)
 
             # fetch all rows from the table
@@ -97,7 +97,7 @@ def get_svgs(conn):
     try:
         with conn.cursor() as cursor:
             # define and execute the SELECT query
-            query = "SELECT id, name, timestamp, svg_filepath, gcode_filepath, render_filepath FROM svgs ORDER BY timestamp;"
+            query = "SELECT id, name, timestamp, svg_filepath, gcode_filepath, render_filepath FROM svgs ORDER BY timestamp DESC;"
             cursor.execute(query)
 
             # fetch all rows from the table
