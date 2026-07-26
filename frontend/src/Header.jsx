@@ -12,13 +12,13 @@ function Header() {
                     <li>
                         <NavLink to="/images"
                                  className={({isActive}) => isActive ? "text-blue-300" : "hover:text-blue-300 duration-700"}>
-                            Image
+                            Images
                         </NavLink>
                     </li>
                     <li>
                         <NavLink to="/svgs"
                                  className={({isActive}) => isActive ? "text-blue-300" : "hover:text-blue-300 duration-700"}>
-                            SVG
+                            SVGs
                         </NavLink>
                     </li>
                 </ul>
