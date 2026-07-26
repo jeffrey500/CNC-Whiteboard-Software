@@ -10,7 +10,7 @@ IDENTITY_MATRIX = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
 
 # return svg points and paths given the svg file path
-def svg_to_paths(file_path: str, curve_resolution=0.3):
+def svg_to_paths(file_path: str, curve_resolution=0.5):
     # returns a np matrix for the svg code line
     def get_transform_matrix(str):
         if 'matrix' not in str:
@@ -91,8 +91,8 @@ def svg_to_paths(file_path: str, curve_resolution=0.3):
 
 
 # generate gcode file
-def generate_gcode_from_svg(file_name: str, output_path_name: str, feedrate=3000, matrix=IDENTITY_MATRIX,
-                            resolution=0.03):
+def generate_gcode_from_svg(file_name: str, output_path_name: str, feedrate=30000, matrix=IDENTITY_MATRIX,
+                            resolution=0.5):
     file_path = Path(__file__).parent.parent / "data" / "svg_inputs" / file_name
 
     path = svg_to_paths(file_path, resolution)
