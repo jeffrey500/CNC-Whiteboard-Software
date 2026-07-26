@@ -1,6 +1,11 @@
-# Force GitHub to treat all .jsx files as JavaScript
+# force GitHub to treat all .jsx files as JavaScript
 *.jsx linguist-language=JavaScript
 
-# Prevent GitHub from ignoring .jsx files as generated or vendored code
+# prevent GitHub from ignoring .jsx files as generated or vendored code
 *.jsx linguist-vendored=false
 *.jsx linguist-generated=false
+
+# ignore G-code
+*.gcode linguist-vendored
+*.g linguist-vendored
+*.nc linguist-vendored
