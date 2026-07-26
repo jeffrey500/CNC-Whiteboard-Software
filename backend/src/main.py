@@ -5,6 +5,7 @@ from typing import Annotated
 
 import numpy as np
 import psycopg2
+import time
 import uvicorn
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from starlette import status
@@ -21,20 +22,27 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://192.168.2.179:5173"],  # Update this if React is on a different port
+    allow_origins=["http://192.168.2.179:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# DB connection
-conn = psycopg2.connect(
-    host="192.168.2.179",
-    database="postgres",
-    user="postgres",
-    password="mysecretpassword",
-    port="5432"
-)
+
+while True:
+    try:
+        conn = psycopg2.connect(
+            host="db", # Uses the Docker Compose service name
+            database="postgres",
+            user="postgres",
+            password="mysecretpassword",
+            port="5432"
+        )
+        print("Successfully connected to the database!")
+        break
+    except psycopg2.OperationalError:
+        print("Waiting for database to start...")
+        time.sleep(2)
 
 
 # expose static files
