@@ -45,8 +45,18 @@ while True:
         time.sleep(2)
 
 
+# ensure data directories exist (handles Git ignoring empty folders)
+base_data_dir = Path(__file__).parent.parent / "data"
+required_folders = [
+    "image_inputs", "image_gcode_output", "image_render",
+    "svg_inputs", "svg_gcode_output", "svg_render"
+]
+
+for folder in required_folders:
+    (base_data_dir / folder).mkdir(parents=True, exist_ok=True)
+
 # expose static files
-app.mount("/static", StaticFiles(directory="backend/data"), name="static")
+app.mount("/static", StaticFiles(directory=str(base_data_dir)), name="static")
 
 
 # upload image to database
