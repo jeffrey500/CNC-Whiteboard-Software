@@ -32,13 +32,56 @@ app.add_middleware(
 while True:
     try:
         conn = psycopg2.connect(
-            host="db", # Uses the Docker Compose service name
+            host="db",
             database="postgres",
             user="postgres",
             password="mysecretpassword",
             port="5432"
         )
         print("Successfully connected to the database!")
+
+        # automatically create the required tables if they are missing
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                           CREATE TABLE IF NOT EXISTS images
+                           (
+                               id
+                               SERIAL
+                               PRIMARY
+                               KEY,
+                               name
+                               TEXT,
+                               timestamp
+                               TIMESTAMPTZ,
+                               image_filepath
+                               TEXT,
+                               gcode_filepath
+                               TEXT,
+                               render_filepath
+                               TEXT
+                           );
+                           """)
+            cursor.execute("""
+                           CREATE TABLE IF NOT EXISTS svgs
+                           (
+                               id
+                               SERIAL
+                               PRIMARY
+                               KEY,
+                               name
+                               TEXT,
+                               timestamp
+                               TIMESTAMPTZ,
+                               svg_filepath
+                               TEXT,
+                               gcode_filepath
+                               TEXT,
+                               render_filepath
+                               TEXT
+                           );
+                           """)
+            conn.commit()
+
         break
     except psycopg2.OperationalError:
         print("Waiting for database to start...")
