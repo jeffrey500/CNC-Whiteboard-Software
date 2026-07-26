@@ -3,7 +3,7 @@ uvicorn
 psycopg2-binary
 numpy
 python-multipart
-opencv-python-headless
+opencv-contrib-python-headless
 scipy
 pyserial
 svgpathtools
