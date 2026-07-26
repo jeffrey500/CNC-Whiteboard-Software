@@ -131,7 +131,6 @@ def get_svg(conn, id):
     except Exception as error:
         raise error
 
-
 def delete_svg(conn, id):
     try:
         with conn.cursor() as cursor:

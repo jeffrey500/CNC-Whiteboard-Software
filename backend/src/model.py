@@ -19,5 +19,7 @@ class SVG(BaseModel):
     render_filepath: str
 
 class SVGEditRequest(BaseModel):
-    x_factor: float
-    y_factor: float
+    x_scale: float
+    x_translate: float
+    y_scale: float
+    y_translate: float

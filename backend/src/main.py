@@ -12,6 +12,7 @@ from starlette import status
 import src.db as db
 from src.model import Image, SVG, SVGEditRequest
 from src.image_processing import generate_gcode_from_image
+from src.plot import send_gcode
 from src.svg_processing import generate_gcode_from_svg
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -190,12 +191,46 @@ def delete_svg(id: int):
 def edit_svg(id: int, params: SVGEditRequest):
     try:
         # edit svg entry from database
-        matrix = np.array([[params.x_factor, 0, 0], [0, params.y_factor, 0], [0, 0, 1]])
+        matrix = np.array([[params.x_scale, params.x_translate, 0], [0, params.y_scale, params.y_translate], [0, 0, 1]])
 
         svg = db.get_svg(conn, id)
         file_name = Path(svg.name)
 
-        generate_gcode_from_svg(file_name=(file_name.stem),output_path_name=svg.name,matrix=matrix)
+        generate_gcode_from_svg(file_name=svg.name,output_path_name=file_name.stem,matrix=matrix)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+
+# plot svg gcode
+@app.post("/svg/plot/{id}", status_code=200)
+def plot_svg(id: int):
+    try:
+        svg = db.get_svg(conn, id)
+        file_name = Path(svg.name)
+        file_path =  Path(__file__).parent.parent / "data" / "svg_gcode_output" / f"{file_name.stem}.gcode"
+
+        send_gcode(str(file_path), "COM3")
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+
+
+# plot image gcode
+@app.post("/image/plot/{id}", status_code=200)
+def plot_svg(id: int):
+    try:
+        svg = db.get_image(conn, id)
+        file_name = Path(svg.name)
+        file_path =  Path(__file__).parent.parent / "data" / "image_gcode_output" / f"{file_name.stem}.gcode"
+
+        send_gcode(str(file_path), "COM3")
 
     except Exception as e:
         raise HTTPException(

@@ -127,8 +127,8 @@ def generate_gcode_from_path(paths, svg: bool, feedrate=30000, output_path_name=
 
 # initial gcode
 def start_gcode(feed_rate: int):
-    return [";$H ; Home all axes (move to limit switches)",
-            ";$1=255 ; lock motors",
+    return ["$H ; Home all axes (move to limit switches)",
+            "$1=255 ; lock motors",
             "G28.1 ; set new home after homing",
             "G21 ; Set units to Millimeters",
             "G90 ; Set to Absolute Positioning",
@@ -142,6 +142,7 @@ def start_gcode(feed_rate: int):
 # ending gcode
 def end_gcode():
     return ["; finished plotting",
-            "; lift up pen",
+            "M5; lift up pen",
+            "G4 P0.08",
             "G0X0Y0",
             ";ug$1=0 ; unlock motors", ]
