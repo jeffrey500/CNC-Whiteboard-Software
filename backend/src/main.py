@@ -104,7 +104,7 @@ app.mount("/static", StaticFiles(directory=str(base_data_dir)), name="static")
 
 # upload image to database
 @app.post("/image/", status_code=201)
-async def create_image(file: Annotated[UploadFile, File()]):
+def create_image(file: Annotated[UploadFile, File()]):
     # save the uploaded file to the "data/image_inputs" directory
     filename = file.filename
     file_path = Path(__file__).parent.parent / "data" / "image_inputs" / filename
@@ -194,7 +194,7 @@ def plot_image(id: int, params: PlotRequest):
 
 # upload svg to database
 @app.post("/svg/", status_code=201)
-async def create_svg(file: Annotated[UploadFile, File()]):
+def create_svg(file: Annotated[UploadFile, File()]):
     # save the uploaded file to the "data/image_inputs" directory
     filename = file.filename
     file_path = Path(__file__).parent.parent / "data" / "svg_inputs" / filename
