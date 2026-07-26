@@ -21,7 +21,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Update this if React is on a different port
+    allow_origins=["http://192.168.2.179:5173"],  # Update this if React is on a different port
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,7 +29,7 @@ app.add_middleware(
 
 # DB connection
 conn = psycopg2.connect(
-    host="localhost",
+    host="192.168.2.179",
     database="postgres",
     user="postgres",
     password="mysecretpassword",

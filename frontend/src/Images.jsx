@@ -27,7 +27,7 @@ function Images() {
         const fetchImages = async () => {
             setIsLoading(true);
             try {
-                const response = await fetch('http://localhost:5050/image/');
+                const response = await fetch('http://192.168.2.179:5050/image/');
                 if (response.ok) {
                     const data = await response.json();
                     setStoredImages(data);
@@ -71,7 +71,7 @@ function Images() {
         formData.append('file', image);
 
         try {
-            const response = await fetch('http://localhost:5050/image/', {
+            const response = await fetch('http://192.168.2.179:5050/image/', {
                 method: 'POST',
                 body: formData,
             });
@@ -99,7 +99,7 @@ function Images() {
     // handles deleting selected image
     const deleteImage = async () => {
         try {
-            const response = await fetch(`http://localhost:5050/image/${storedImages[selectedImage].id}`, {
+            const response = await fetch(`http://192.168.2.179:5050/image/${storedImages[selectedImage].id}`, {
                 method: 'DELETE',
             });
 
@@ -120,7 +120,7 @@ function Images() {
         try {
             setPlotting(true);
 
-            const response = await fetch(`http://localhost:5050/image/plot/${storedImages[selectedImage].id}`, {
+            const response = await fetch(`http://192.168.2.179:5050/image/plot/${storedImages[selectedImage].id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -167,7 +167,7 @@ function Images() {
                                      onClick={() => selectImage(index)}
                                 >
                                     <img
-                                        src={`http://localhost:5050/static/image_inputs/${img.name}`}
+                                        src={`http://192.168.2.179:5050/static/image_inputs/${img.name}`}
                                         alt={img.name}
                                         className={"max-w-full max-h-full object-contain border-3 border-gray-500"}
                                     />
@@ -188,14 +188,14 @@ function Images() {
                         <h1 className={"text-5xl font-bold text-gray-500 w-full text-left"}>{storedImages[selectedImage].name}</h1>
 
                         {/*displays the selected image*/}
-                        <img src={`http://localhost:5050/static/image_inputs/${storedImages[selectedImage].name}`}
+                        <img src={`http://192.168.2.179:5050/static/image_inputs/${storedImages[selectedImage].name}`}
                              alt={storedImages[selectedImage].name}
                              className="max-w-full object-contain border-3 border-gray-500"/>
 
                         <h1 className={"text-5xl font-bold text-gray-500 w-full text-left"}>Plotting Render</h1>
 
                         {/*displays the image plotting render*/}
-                        <img src={`http://localhost:5050/static/image_render/${getRenderPath(storedImages[selectedImage].name)}`}
+                        <img src={`http://192.168.2.179:5050/static/image_render/${getRenderPath(storedImages[selectedImage].name)}`}
                              alt={getRenderPath(storedImages[selectedImage].name)}
                              className="max-w-full object-contain border-3 border-gray-500"/>
 

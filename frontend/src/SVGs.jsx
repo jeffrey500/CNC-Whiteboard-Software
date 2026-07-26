@@ -34,7 +34,7 @@ function SVGs() {
         const fetchSVGs = async () => {
             setIsLoading(true);
             try {
-                const response = await fetch('http://localhost:5050/svg/');
+                const response = await fetch('http://192.168.2.179:5050/svg/');
                 if (response.ok) {
                     const data = await response.json();
                     setStoredSVGs(data);
@@ -78,7 +78,7 @@ function SVGs() {
         formData.append('file', SVG);
 
         try {
-            const response = await fetch('http://localhost:5050/svg/', {
+            const response = await fetch('http://192.168.2.179:5050/svg/', {
                 method: 'POST',
                 body: formData,
             });
@@ -106,7 +106,7 @@ function SVGs() {
     // handles deleting selected SVG
     const deleteSVG = async () => {
         try {
-            const response = await fetch(`http://localhost:5050/svg/${storedSVGs[selectedSVG].id}`, {
+            const response = await fetch(`http://192.168.2.179:5050/svg/${storedSVGs[selectedSVG].id}`, {
                 method: 'DELETE',
             });
 
@@ -132,7 +132,7 @@ function SVGs() {
         try {
             setPlotting(true);
 
-            const response = await fetch(`http://localhost:5050/svg/plot/${storedSVGs[selectedSVG].id}`, {
+            const response = await fetch(`http://192.168.2.179:5050/svg/plot/${storedSVGs[selectedSVG].id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ function SVGs() {
         e.preventDefault();
 
         try {
-            const response = await fetch(`http://localhost:5050/svg/${storedSVGs[selectedSVG].id}`, {
+            const response = await fetch(`http://192.168.2.179:5050/svg/${storedSVGs[selectedSVG].id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -201,7 +201,7 @@ function SVGs() {
                                      onClick={() => selectSVG(index)}
                                 >
                                     <img
-                                        src={`http://localhost:5050/static/SVG_inputs/${svg.name}`}
+                                        src={`http://192.168.2.179:5050/static/SVG_inputs/${svg.name}`}
                                         alt={svg.name}
                                         className={"max-w-full max-h-full object-contain border-3 border-gray-500"}
                                     />
@@ -222,14 +222,14 @@ function SVGs() {
                         <h1 className={"text-5xl font-bold text-gray-500 w-full text-left"}>{storedSVGs[selectedSVG].name}</h1>
 
                         {/*displays the selected SVG*/}
-                        <img src={`http://localhost:5050/static/SVG_inputs/${storedSVGs[selectedSVG].name}`}
+                        <img src={`http://192.168.2.179:5050/static/SVG_inputs/${storedSVGs[selectedSVG].name}`}
                              alt={storedSVGs[selectedSVG].name}
                              className="max-w-full object-contain border-3 border-gray-500"/>
 
                         <h1 className={"text-5xl font-bold text-gray-500 w-full text-left"}>Plotting Render</h1>
 
                         {/*displays the SVG plotting render*/}
-                        <img src={`http://localhost:5050/static/SVG_render/${getRenderPath(storedSVGs[selectedSVG].name)}?t=${refreshSVGs}`}
+                        <img src={`http://192.168.2.179:5050/static/SVG_render/${getRenderPath(storedSVGs[selectedSVG].name)}?t=${refreshSVGs}`}
                              alt={getRenderPath(storedSVGs[selectedSVG].name)}
                              className="max-w-full object-contain border-3 border-gray-500"/>
 
