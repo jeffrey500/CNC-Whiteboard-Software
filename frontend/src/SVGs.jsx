@@ -201,7 +201,7 @@ function SVGs() {
                                      onClick={() => selectSVG(index)}
                                 >
                                     <img
-                                        src={`http://192.168.2.179:5050/static/SVG_inputs/${svg.name}`}
+                                        src={`http://192.168.2.179:5050/static/svg_inputs/${svg.name}`}
                                         alt={svg.name}
                                         className={"max-w-full max-h-full object-contain border-3 border-gray-500"}
                                     />
@@ -222,14 +222,14 @@ function SVGs() {
                         <h1 className={"text-5xl font-bold text-gray-500 w-full text-left"}>{storedSVGs[selectedSVG].name}</h1>
 
                         {/*displays the selected SVG*/}
-                        <img src={`http://192.168.2.179:5050/static/SVG_inputs/${storedSVGs[selectedSVG].name}`}
+                        <img src={`http://192.168.2.179:5050/static/svg_inputs/${storedSVGs[selectedSVG].name}`}
                              alt={storedSVGs[selectedSVG].name}
                              className="max-w-full object-contain border-3 border-gray-500"/>
 
                         <h1 className={"text-5xl font-bold text-gray-500 w-full text-left"}>Plotting Render</h1>
 
                         {/*displays the SVG plotting render*/}
-                        <img src={`http://192.168.2.179:5050/static/SVG_render/${getRenderPath(storedSVGs[selectedSVG].name)}?t=${refreshSVGs}`}
+                        <img src={`http://192.168.2.179:5050/static/svg_render/${getRenderPath(storedSVGs[selectedSVG].name)}?t=${refreshSVGs}`}
                              alt={getRenderPath(storedSVGs[selectedSVG].name)}
                              className="max-w-full object-contain border-3 border-gray-500"/>
 

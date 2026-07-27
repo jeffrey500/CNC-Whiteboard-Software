@@ -46,43 +46,25 @@ while True:
         # automatically create the required tables if they are missing
         with conn.cursor() as cursor:
             cursor.execute("""
-                           CREATE TABLE IF NOT EXISTS images
-                           (
-                               id
-                               SERIAL
-                               PRIMARY
-                               KEY,
-                               name
-                               TEXT,
-                               timestamp
-                               TIMESTAMPTZ,
-                               image_filepath
-                               TEXT,
-                               gcode_filepath
-                               TEXT,
-                               render_filepath
-                               TEXT
-                           );
-                           """)
+                CREATE TABLE IF NOT EXISTS images (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT,
+                    timestamp TIMESTAMPTZ,
+                    image_filepath TEXT UNIQUE,
+                    gcode_filepath TEXT,
+                    render_filepath TEXT
+                );
+            """)
             cursor.execute("""
-                           CREATE TABLE IF NOT EXISTS svgs
-                           (
-                               id
-                               SERIAL
-                               PRIMARY
-                               KEY,
-                               name
-                               TEXT,
-                               timestamp
-                               TIMESTAMPTZ,
-                               svg_filepath
-                               TEXT,
-                               gcode_filepath
-                               TEXT,
-                               render_filepath
-                               TEXT
-                           );
-                           """)
+                CREATE TABLE IF NOT EXISTS svgs (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT,
+                    timestamp TIMESTAMPTZ,
+                    svg_filepath TEXT UNIQUE,
+                    gcode_filepath TEXT,
+                    render_filepath TEXT
+                );
+            """)
             conn.commit()
 
         break
