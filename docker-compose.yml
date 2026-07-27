@@ -19,6 +19,10 @@ services:
       - "5050:5050"
     depends_on:
       - db
+    volumes:
+      - ./backend/data:/app/data
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
     restart: unless-stopped
 
   frontend:
