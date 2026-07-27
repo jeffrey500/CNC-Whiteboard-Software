@@ -22,7 +22,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://192.168.2.179:5173"],
+    allow_origins=[
+        "http://192.168.2.179:5173",  # Vite Dev Server
+        "http://192.168.2.179"  # Nginx Production Server
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
