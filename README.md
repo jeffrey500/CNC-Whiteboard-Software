@@ -1,6 +1,8 @@
 # CNC-Whiteboard Software
 Full-stack software that converts digital images and SVGs into optimized G-code for my [CNC-Whiteboard](https://github.com/jeffrey500/CNC-Whiteboard), and plots them directly onto a whiteboard.
 
+<img src="github_media/Screenshot%202026-07-28%20at%2010.36.43%E2%80%AFAM.png" width="49%" alt="title_image"> <img src="github_media/Screenshot%202026-07-28%20at%2010.50.45%E2%80%AFAM.png" width="49%" alt="title_image">
+
 ## Key Features
 
 - **Web-based interface:** React-based front-end for uploading, managing, and previewing before plotting
